@@ -80,6 +80,8 @@ def generate_launch_description():
                         '/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
                         # TF from Gazebo model
                         '/model/my_robot/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',
+                        #camera: Gazebo → ROS2
+                        '/camera/image_raw@sensor_msgs/msg/Image[gz.msgs.Image',
                     ],
                     parameters=[{'use_sim_time': True}],
                     output='screen'
