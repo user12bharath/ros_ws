@@ -145,25 +145,27 @@
   <joint name="camera_joint" type="fixed">
     <parent link="base_link"/>
     <child link="camera_link"/>
-    <origin xyp="0.16 0 0.05" rpy="0 0 0"/>
+    <origin xyz="0.16 0 0.05" rpy="0 0 0"/>
   </joint>
 
   <link name="camera_link">
     <visual>
       <geometry>
         <box size="0.02 0.05 0.05"/>
-      <geometry>
+      </geometry>
       <material name="green">
         <color rgba="0 0.8 0 1"/>
-      <material>
+      </material>
     </visual>
     <collision>
       <geometry>
         <box size="0.02 0.05 0.05"/>
-      <geometry>
+      </geometry>
     </collision>
     <inertial>
-      <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
+      <mass value="0.02"/>
+      <inertia ixx="0.00001" ixy="0" ixz="0" 
+                iyy="0.00001" iyz="0" izz="0.00001"/>
     </inertial>
   </link>
       
@@ -217,7 +219,7 @@
         <image>
           <width>640</width>
           <height>480</height>
-          <format>R8G8B9</format>
+          <format>R8G8B8</format>
         </image>
         <clip>
           <near>0.1</near>
