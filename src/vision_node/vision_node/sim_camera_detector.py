@@ -35,30 +35,48 @@ class SimCameraDetector(Node):
         try:
             cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         except Exception as e:
-            self.get_logger().error(f'Error converting image: {e}')
+            self.get_logger().error(f"Error converting ROS Image to OpenCV: {e}")
             return
         
-        gray_image = cv.cvtColor(cv_image, cv.COLOR_BGR2GRAY)
-        faces = self.face_cascade.detectMultiScale(gray_image, scaleFactor=1.1, minNeighbors=5)
-        face_count = len(faces)
+        HSV = cv.cvtColor(cv_image, cv.COLOR_BGR2HSV)
 
-        # draw bounding boxes on the frame
-        for (x, y, w, h) in faces:
-            cv.rectangle(cv_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        lower_red1 = (0, 120, 70)
+        upper_red1 = (10, 255, 255)
+        lower_red2 = (170, 120, 70)
+        upper_red2 = (180, 255, 255)
 
-        # publish the face count with alert 
-        face_count_msg = Int32()
-        face_count_msg.data = face_count
-        self.publisher_1.publish(face_count_msg)
+        mask1 = cv.inRange(HSV, lower_red1, upper_red1)
+        mask2 = cv.inRange(HSV, lower_red2, upper_red2)
+        mask = cv.bitwise_or(mask1, mask2)
+
+        contour, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+
+        detected = False
+        largest_area = 0
+        target_box = None
+
+        for c in contour:
+            area =cv.contourArea(c)
+            if area > 300 and area > largest_area:
+                largest_area = area
+                target_box = cv.boundingRect(c)
+                detected = True
+
+        if target_box:
+            x, y, w, h = target_box
+            cv.rectangle(cv_image, (x, y), (x+w, y+h), (0, 255, 0), 2)
+            cv.putText(cv_image, f'Target area={int(largest_area)}', (x, y-10), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+
+
         alert_msg = String()
-        if face_count > 0:
-            alert_msg.data = 'Face detected!'
-        else:
-            alert_msg.data = 'No face detected.'
+        alert_msg.data = 'TARGET DETECTED' if detected else 'CLEAR'
         self.publisher_2.publish(alert_msg)
+        
+        count_msg = Int32()
+        count_msg.data = 1 if detected else 0
+        self.publisher_1.publish(count_msg)
 
-        #display the frames that robot sees with detection drawing
-        cv.imshow('Sim Camera View', cv_image)
+        cv.imshow('sim camera view', cv_image)
         cv.waitKey(1)
 
 

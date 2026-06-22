@@ -26,6 +26,7 @@ setup(
         'console_scripts': [
             'square_driver = my_robot.square_driver:main',
             'obstacle_avoidance = my_robot.obstacle_avoidance:main',
+            'target_reactor = my_robot.target_reactor:main',
         ],
     },
 )
