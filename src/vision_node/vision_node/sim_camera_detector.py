@@ -2,6 +2,7 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 from std_msgs.msg import String, Int32
+from ament_index_python.packages import get_package_share_directory
 from cv_bridge import CvBridge
 import cv2 as cv
 import os
@@ -18,7 +19,11 @@ class SimCameraDetector(Node):
         self.publisher_1 = self.create_publisher(Int32, '/vision/sim_face_count', 10)
         self.publisher_2 = self.create_publisher(String, '/vision/sim_alert', 10)
 
-        cascade_path = os.path.join(os.path.dirname(__file__), 'haarcascade_frontalface_default.xml')
+        cascade_path = os.path.join(
+            get_package_share_directory('vision_node'),
+            'data',
+            'haarcascade_frontalface_default.xml'
+        )
 
         if not os.path.exists(cascade_path):
             cascade_path = cv.data.haarcascades + 'haarcascade_frontalface_default.xml'
@@ -59,9 +64,9 @@ class SimCameraDetector(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    sim_camera_detector = SimCameraDetector()
-    rclpy.spin(sim_camera_detector)
-    sim_camera_detector.destroy_node()
+    node = SimCameraDetector()
+    rclpy.spin(node)
+    node.destroy_node()
     rclpy.shutdown()
 
 if __name__ == '__main__':
