@@ -28,6 +28,7 @@ setup(
         'console_scripts': [
             'face_detector= vision_node.face_detector_node:main',
             'vision_monitor= vision_node.vision_monitor_node:main',
+            'sim_camera_detector= vision_node.sim_camera_detector:main',
         ],
     },
 )
