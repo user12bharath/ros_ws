@@ -15,7 +15,7 @@ class TargetReactor(Node):
         self.subscriber_1 = self.create_subscription(String, '/vision/sim_alert', self.alert_callback, 10)
         self.subscriber_2 = self.create_subscription(LaserScan, '/scan', self.scan_callback, 10)
 
-        self.publisher = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.publisher = self.create_publisher(Twist, '/cmd_vel_safety', 10)
 
         self.stop_distance = 1.2
         self.slow_distance = 1.8
