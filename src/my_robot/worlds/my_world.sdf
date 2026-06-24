@@ -84,12 +84,12 @@
     <!-- Wall 1 -->
     <model name="wall_1">
       <static>true</static>
-      <pose>2 0 0.5 0 0 0</pose>
+      <pose>5 0 0.5 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry>
             <box>
-              <size>0.2 4 1</size>
+              <size>0.2 10 1</size>
             </box>
           </geometry>
         </collision>
@@ -97,7 +97,7 @@
         <visual name="visual">
           <geometry>
             <box>
-              <size>0.2 4 1</size>
+              <size>0.2 10 1</size>
             </box>
           </geometry>
 
@@ -111,12 +111,12 @@
     <!-- Wall 2 -->
     <model name="wall_2">
       <static>true</static>
-      <pose>-2 0 0.5 0 0 0</pose>
+      <pose>-5 0 0.5 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry>
             <box>
-              <size>0.2 4 1</size>
+              <size>0.2 10 1</size>
             </box>
           </geometry>
         </collision>
@@ -124,7 +124,7 @@
         <visual name="visual">
           <geometry>
             <box>
-              <size>0.2 4 1</size>
+              <size>0.2 10 1</size>
             </box>
           </geometry>
 
@@ -138,12 +138,12 @@
     <!-- Wall 3 -->
     <model name="wall_3">
       <static>true</static>
-      <pose>0 2 0.5 0 0 0</pose>
+      <pose>0 5 0.5 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry>
             <box>
-              <size>4 0.2 1</size>
+              <size>10 0.2 1</size>
             </box>
           </geometry>
         </collision>
@@ -151,7 +151,7 @@
         <visual name="visual">
           <geometry>
             <box>
-              <size>4 0.2 1</size>
+              <size>10 0.2 1</size>
             </box>
           </geometry>
 
@@ -165,13 +165,13 @@
     <!-- Missing 4th wall -->
     <model name="wall_4">
       <static>true</static>
-      <pose>0 -2 0.5 0 0 0</pose>
+      <pose>0 -5 0.5 0 0 0</pose>
 
       <link name="link">
         <collision name="collision">
           <geometry>
             <box>
-              <size>4 0.2 1</size>
+              <size>10 0.2 1</size>
             </box>
           </geometry>
         </collision>
@@ -179,7 +179,7 @@
         <visual name="visual">
           <geometry>
             <box>
-              <size>4 0.2 1</size>
+              <size>10 0.2 1</size>
             </box>
           </geometry>
 
@@ -192,7 +192,7 @@
 
     <model name="target_color">
       <static>true</static>
-      <pose>1.8 0.5 0 0 0 0</pose>
+      <pose>4 0.5 0 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry>

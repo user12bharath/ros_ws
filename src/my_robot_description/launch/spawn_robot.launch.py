@@ -70,17 +70,11 @@ def generate_launch_description():
                     executable='parameter_bridge',
                     name='ros_gz_bridge',
                     arguments=[
-                        # clock
                         '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
-                        # cmd_vel: ROS2 → Gazebo
-                        '/cmd_vel@geometry_msgs/msg/Twist]gz.msgs.Twist',
-                        # scan: Gazebo → ROS2
+                        '/cmd_vel_out@geometry_msgs/msg/TwistStamped]gz.msgs.Twist',
                         '/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
-                        # odom: Gazebo → ROS2
                         '/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
-                        # TF from Gazebo model
                         '/model/my_robot/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',
-                        #camera: Gazebo → ROS2
                         '/camera/image_raw@sensor_msgs/msg/Image[gz.msgs.Image',
                     ],
                     parameters=[{'use_sim_time': True}],

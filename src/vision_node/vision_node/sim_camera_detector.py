@@ -76,6 +76,8 @@ class SimCameraDetector(Node):
         count_msg.data = 1 if detected else 0
         self.publisher_1.publish(count_msg)
 
+        self.get_logger().info(f'area of the detected target: {largest_area}, alert: {alert_msg.data}')
+
         cv.imshow('sim camera view', cv_image)
         cv.waitKey(1)
 
