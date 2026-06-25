@@ -1,133 +1,126 @@
 # ROS2 Autonomous Robotics Portfolio
 
-Three connected ROS2 projects built end-to-end: a fully autonomous differential-drive robot (SLAM + Nav2 in Gazebo), a real-time multi-threaded vision pipeline, and a set of Python modules that reimplement ROS2's internal pub/sub mechanism from first principles. Built incrementally, debugging real failures along the way rather than following a single tutorial path.
+A perception-driven autonomous ground robot, built end-to-end in ROS2 Jazzy and Gazebo Harmonic. The robot autonomously navigates a mapped environment using Nav2, while a real-time camera-based detector fuses with lidar range data to override navigation and react to a visual target — arbitrated through priority-based command multiplexing. Three connected projects, built incrementally, debugging real integration failures along the way rather than following a single tutorial path.
+
+## The centerpiece: fused perception + navigation
+
+The robot runs full autonomous navigation (SLAM-built map, AMCL localization, Nav2 global/local planning) **and** a parallel vision-based safety behavior simultaneously. Both write velocity commands; `twist_mux` arbitrates between them by priority, so a visual detection can interrupt an in-progress navigation goal without modifying the navigation stack itself.
+
+```
+                    ┌─────────────────────┐
+                    │     Nav2 Stack        │
+                    │ (AMCL → Planner →     │
+                    │  MPPI Controller)      │
+                    └──────────┬────────────┘
+                               │ /cmd_vel  (priority 10)
+                               ▼
+┌──────────────────┐   ┌──────────────┐   ┌──────────────────┐
+│  Camera (sim)      │──▶│ Color Target  │   │   twist_mux        │
+│  + Lidar            │   │ Detector       │──▶│ (priority         │──▶ /cmd_vel_out ──▶ Robot
+└──────────────────┘   └──────┬───────┘   │  arbitration)       │
+                               │ alert         └──────────────────┘
+                               ▼                       ▲
+                    ┌─────────────────────┐            │
+                    │   Target Reactor      │────────────┘
+                    │ (vision + lidar        │ /cmd_vel_safety
+                    │  fusion → speed)        │ (priority 100)
+                    └─────────────────────┘
+```
+
+When the camera detects the target and lidar confirms it's within range, `target_reactor` (priority 100) overrides Nav2 (priority 10) — slowing and stopping the robot even while the planner still believes it should keep moving toward the original goal.
 
 ## Repository structure
 
 ```
 src/
-├── my_robot_description/        # Project 1 — robot model, world, maps
-│   ├── urdf/my_robot.urdf
+├── my_robot_description/        # robot model, world, maps, launch
+│   ├── urdf/my_robot.urdf        # base, wheels, caster, lidar, camera
 │   ├── launch/spawn_robot.launch.py
-│   ├── worlds/my_world.sdf
+│   ├── worlds/my_world.sdf       # walls + red target object
 │   └── maps/my_world_map.{pgm,yaml}
-├── my_robot/                    # Project 1 — control + avoidance nodes
+│   └── config/twist_mux.yaml
+├── my_robot/                    # control + fusion logic
 │   └── my_robot/
-│       ├── square_driver.py
-│       └── obstacle_avoidance.py
-├── vision_node/                 # Project 2 — perception pipeline
+│       ├── square_driver.py      # open-loop control (early milestone)
+│       ├── obstacle_avoidance.py # reactive lidar-only avoidance
+│       └── target_reactor.py     # vision + lidar fusion → safety override
+├── vision_node/                 # perception pipeline
     └── vision_node/
-        ├── face_detector_node.py
+        ├── face_detector_node.py     # webcam Haar-cascade detector
         └── vision_monitor_node.py
+        └── sim_camera_detector.py    # HSV color detection on sim camera
+└── ros2_internals/               # pub/sub mechanism in pure Python
+    ├── topic_bus.py
+    ├── ring_buffer.py
+    ├── sensor_fusion.py
+    └── decorators.py
 ```
 
 ---
 
-## Project 1 — Autonomous Differential-Drive Robot (ROS2 + Gazebo Harmonic)
-
-A complete autonomous navigation stack for a custom-built differential-drive robot, simulated end-to-end in Gazebo Harmonic with ROS2 Jazzy. The robot maps an unknown environment using SLAM, localizes itself within that map, and autonomously plans and executes paths to goal positions while avoiding obstacles in real time.
-
-**What this demonstrates:** custom URDF robot model built from scratch (no pre-built robot description used), a custom Gazebo world, a differential-drive physics plugin wired to that URDF, reactive obstacle avoidance written directly against raw lidar data, a full SLAM mapping pipeline (slam_toolbox), and a full Nav2 stack — AMCL localization, global/local planning, recovery behaviors, multi-waypoint navigation.
-
-### Architecture
+## Full system bring-up
 
 ```
-                         ┌─────────────────┐
-                         │   Gazebo Sim     │
-                         │  (physics, lidar,│
-                         │   diff-drive)    │
-                         └────────┬─────────┘
-                                  │ /scan, /odom, /tf
-                ┌─────────────────┼─────────────────┐
-                ▼                                   ▼
-      ┌──────────────────┐                ┌──────────────────┐
-      │   SLAM Toolbox     │                │  Obstacle Avoid   │
-      │ (mapping mode)      │                │  (reactive node)  │
-      └────────┬────────────┘                └──────────────────┘
-               │ /map
-               ▼
-      ┌──────────────────┐
-      │   Nav2 Stack        │
-      │ AMCL → Planner →     │
-      │ Controller → BT      │
-      └────────┬────────────┘
-               │ /cmd_vel
-               ▼
-        Robot moves autonomously
-```
-
-### Robot spec
-
-Custom URDF with a rectangular base link, two continuous-joint driven wheels (differential drive), one fixed passive caster wheel, and a 360° lidar (0.12m–3.5m range) mounted on top. Wheel separation 0.24m, wheel radius 0.033m.
-
-### Build
-
-```bash
-sudo apt install ros-jazzy-nav2-bringup ros-jazzy-slam-toolbox ros-jazzy-ros-gz \
-                 ros-jazzy-joint-state-publisher -y
-
-cd ~/ros2_ws
-colcon build --packages-select my_robot_description my_robot
-source install/setup.bash
-```
-
-### Usage
-
-**1. Launch simulation**
-
-```bash
-ros2 launch my_robot_description spawn_robot.launch.py
-```
-
-**2. Mapping mode (SLAM)**
-
-```bash
-ros2 launch slam_toolbox online_async_launch.py use_sim_time:=true
-# drive the robot or run obstacle_avoidance to explore, then save:
-ros2 run nav2_map_server map_saver_cli -f ~/ros2_ws/src/my_robot_description/maps/my_world_map
-```
-
-**3. Navigation mode (using the saved map)**
-
-```bash
-# Terminal 1
+# 1. Simulation
 ros2 launch my_robot_description spawn_robot.launch.py
 
-# Terminal 2 — localization
+# 2. Localization — wait for "Managed nodes are active" before continuing
 ros2 launch nav2_bringup localization_launch.py \
   use_sim_time:=true \
   map:=~/ros2_ws/src/my_robot_description/maps/my_world_map.yaml
 
-# Terminal 3 — navigation stack
+# 3. Set initial pose (required before navigation will accept goals)
+ros2 topic pub --once /initialpose geometry_msgs/msg/PoseWithCovarianceStamped \
+  "{header: {frame_id: 'map'}, pose: {pose: {position: {x: 0.0, y: 0.0, z: 0.0}, \
+    orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}}}}"
+
+# 4. Navigation stack
 ros2 launch nav2_bringup navigation_launch.py \
   use_sim_time:=true \
   params_file:=/opt/ros/jazzy/share/nav2_bringup/params/nav2_params.yaml
 
-# Terminal 4 — RViz with Nav2 panel
+# 5. Perception + fusion
+ros2 run vision_node sim_camera_detector
+ros2 run my_robot target_reactor
+
+# 6. Arbitration — final output the robot actually listens to
+ros2 run twist_mux twist_mux \
+  --ros-args --params-file ~/ros2_ws/src/my_robot_description/config/twist_mux.yaml \
+  -r cmd_vel_out:=cmd_vel_out
+
+# 7. RViz, then send a goal via the Nav2 Goal panel or /goal_pose
 ros2 launch nav2_bringup rviz_launch.py
 ```
 
-In RViz: set **2D Pose Estimate** first to initialize AMCL, then send goals via **Nav2 Goal** or the waypoint panel.
+Watch the fusion live:
 
-**4. Reactive obstacle avoidance (standalone)**
-
-```bash
-ros2 run my_robot obstacle_avoidance
+```
+ros2 topic echo /cmd_vel_out
 ```
 
-Subscribes to `/scan`, filters the front 60° sector, steers away from obstacles closer than 0.5m with hysteresis to prevent oscillation.
+## Engineering problems solved — the real debugging log
 
-### Engineering problems solved
+This project broke in more places than it worked on the first try. Documenting the actual failures because the debugging is the substance of the work, not the final diagram.
 
-**Frame ID mismatch (Gazebo ↔ ROS2 bridge):** Gazebo's auto-generated frame naming (`my_robot/base_footprint/lidar`) didn't match the URDF link name (`base_scan`) SLAM expected, silently breaking mapping. Fixed by explicitly setting `<gz_frame_id>` in the lidar sensor's Gazebo plugin block.
+**Frame ID mismatch (Gazebo ↔ ROS2 bridge):** Gazebo's auto-generated frame naming didn't match the URDF link name SLAM expected, silently breaking mapping. Fixed with an explicit `` override in each sensor's Gazebo plugin block.
 
-**SLAM node alive but not mapping:** `async_slam_toolbox_node` is a ROS2 lifecycle node that does not auto-activate — it was running with zero subscriptions until explicitly transitioned through `configure` → `activate`. Resolved by switching to the official `online_async_launch.py`, which manages this automatically.
+**SLAM node alive but not mapping:** `slam_toolbox`'s lifecycle node doesn't auto-activate — it sat with zero subscriptions until explicitly transitioned through `configure → activate`. Fixed by using the official `online_async_launch.py`, which manages this automatically.
 
-**Recovery behaviors firing on first navigation attempt:** Early planning attempts failed with `Failed to create plan with tolerance of: 0.5` because AMCL's pose estimate hadn't converged yet. Nav2's behavior tree correctly triggered `spin` → `wait` → `backup` recovery, letting AMCL refine localization before the planner succeeded.
+**Recovery behaviors firing on first navigation attempt:** Early planning failed with `tolerance of: 0.5` because AMCL's pose hadn't converged. Nav2's behavior tree correctly triggered `spin → wait → backup`, letting AMCL refine localization before the planner succeeded — not a bug, the designed fault-recovery path.
 
-**Tech stack:** ROS2 Jazzy · Gazebo Harmonic · Nav2 · slam_toolbox · Python (rclpy) · URDF/SDF · RViz2
+**Two publishers, one topic, two message types:** `twist_mux` (v4.5.0) defaults to publishing `TwistStamped`; the Gazebo bridge was subscribing expecting plain `Twist`. `ros2 topic info --verbose` showed two conflicting types on the same topic — fixed by aligning every `cmd_vel*` topic in the chain to `TwistStamped`, including a corresponding change in `target_reactor`'s publisher.
 
----
+**RViz map display silently empty despite `/map` publishing correctly:** a QoS durability mismatch — `map_server` publishes with `TRANSIENT_LOCAL`, RViz's Map display defaulted to `VOLATILE`. DDS refuses to connect incompatible QoS policies with no error, no crash — the display just never receives anything. Fixed by re-adding the display with matching durability.
+
+**"Goal failed" that wasn't actually a planning failure:** the safety reactor was correctly publishing zero velocity (target already in range at the robot's resting position) and, at priority 100 versus navigation's priority 10, was completely masking Nav2's output. `ros2 topic echo /plan` confirmed the planner had succeeded the whole time — the architecture was working exactly as designed; the test setup (robot starting already inside the safety zone) was what needed fixing, not the code.
+
+**Camera lost the target at close range while lidar still tracked it cleanly:** a real sensor-tradeoff, not a bug — narrow camera FOV loses a large, close, slightly off-center object well before an omnidirectional lidar loses contact with it. This is exactly the kind of limitation that motivates real sensor-fusion architectures in industry. Fixed for this demo with temporal smoothing: the reactor only releases its "target visible" state after several consecutive missed detections, rather than reacting to a single dropped frame.
+
+## Tech stack
+
+ROS2 Jazzy · Gazebo Harmonic · Nav2 (AMCL, MPPI controller, behavior trees) · slam_toolbox · twist_mux · OpenCV (Haar cascades, HSV color detection) · cv_bridge · Python (rclpy, threading) · URDF/SDF · RViz2
+
+##
 
 ## Project 2 — Real-Time Vision Pipeline: FaceDetectorNode (ROS2)
 
