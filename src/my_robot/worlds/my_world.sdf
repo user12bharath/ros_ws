@@ -191,13 +191,13 @@
     </model>
 
     <actor name="person_target">
-      <pose>4 -0.5 0 0 0 1.5708</pose>
+      <pose>4 -3.5 0 0 0 1.5708</pose>
       <skin>
         <filename>https://fuel.gazebosim.org/1.0/Mingfei/models/actor/tip/files/meshes/walk.dae</filename>
       </skin>
       <animation name="walking">
         <filename>https://fuel.gazebosim.org/1.0/Mingfei/models/actor/tip/files/meshes/walk.dae</filename>
-        <interpolate_x>true</interpolate_x>
+        <interpolate_x>false</interpolate_x>
       </animation>
       <script>
         <loop>true</loop>
@@ -206,23 +206,23 @@
         <trajectory id="0" type="walking" tension="0.6">
           <waypoint>
             <time>0</time>
-            <pose>4 -0.5 0 0 0 1.5708</pose>
+            <pose>4 0 0 0 0 1.5708</pose>
           </waypoint>
           <waypoint>
             <time>5</time>
-            <pose>4 0.5 0 0 0 1.5708</pose>
+            <pose>4 0 0 0 0 1.5708</pose>
           </waypoint>
           <waypoint>
             <time>5.5</time>
-            <pose>4 0.5 0 0 0 -1.5708</pose>
+            <pose>4 0 0 0 0 -1.5708</pose>
           </waypoint>
           <waypoint>
             <time>10.5</time>
-            <pose>4 -0.5 0 0 0 -1.5708</pose>
+            <pose>4 0 0 0 0 -1.5708</pose>
           </waypoint>
           <waypoint>
             <time>11</time>
-            <pose>4 -0.5 0 0 0 1.5708</pose>
+            <pose>4 0 0 0 0 1.5708</pose>
           </waypoint>
         </trajectory>
       </script>
