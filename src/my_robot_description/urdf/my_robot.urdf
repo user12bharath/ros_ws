@@ -199,7 +199,7 @@
     </plugin>
   </gazebo>
 
-  <gazebo reference="base_scan">
+  <gazebo reference="base_scan">  <!-- Add a lidar sensor to the base_scan link -->
     <sensor name="lidar" type="gpu_lidar">
       <topic>scan</topic>
       <gz_frame_id>base_scan</gz_frame_id>
@@ -223,7 +223,7 @@
     </sensor>
   </gazebo>
 
-  <gazebo reference="camera_link">
+  <gazebo reference="camera_link">    <!-- Add a camera sensor to the camera_link -->
     <sensor name="camera" type="camera">
       <topic>camera/image_raw</topic>
       <gz_frame_id>camera_link</gz_frame_id>

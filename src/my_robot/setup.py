@@ -24,9 +24,9 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'square_driver = my_robot.square_driver:main',
-            'obstacle_avoidance = my_robot.obstacle_avoidance:main',
-            'target_reactor = my_robot.target_reactor:main',
+            'square_driver = my_robot.square_driver:main',  # Add this line for the square_driver node
+            'obstacle_avoidance = my_robot.obstacle_avoidance:main',    # Add this line for the obstacle_avoidance node
+            'target_reactor = my_robot.target_reactor:main',  # Add this line for the target_reactor node
         ],
     },
 )
